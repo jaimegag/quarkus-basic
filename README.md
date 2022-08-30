@@ -1,17 +1,12 @@
-# quarkus-basic Project
+# quarkus-basic
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
+This simple Quarkus app has been created to test Quarkus with Cloud Native Buildpacks, Tanzu Build Service and Tanzu Application Platform
+
 If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
 
-## Running the application in dev mode
-
-You can run your application in dev mode that enables live coding using:
-```shell script
-./mvnw compile quarkus:dev
-```
-
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
+For the original quarkus-generated Readme please check the [README-original](/README-original.md)
 
 ## Packaging and running the application
 
@@ -31,30 +26,37 @@ If you want to build an _über-jar_, execute the following command:
 
 The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
 
-## Creating a native executable
+## Building with Cloud Native Buildpacks
 
-You can create a native executable using: 
+To build this application with the default Java and Maven Buildpacks, make sure to set these environment variables
 ```shell script
-./mvnw package -Pnative
+BP_MAVEN_BUILT_ARTIFACT: "target/quarkus-app/lib/ target/quarkus-app/*.jar target/quarkus-app/app/ target/quarkus-app/quarkus/"
+BP_MAVEN_BUILD_ARGUMENTS: "package -DskipTests=true -Dmaven.javadoc.skip=true -Dquarkus.package.type=fast-jar"
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using: 
+In a cnbimage (kpack) Image, it looks like this
 ```shell script
-./mvnw package -Pnative -Dquarkus.native.container-build=true
+spec:
+  build:
+    env:
+    - name: BP_MAVEN_BUILT_ARTIFACT
+      value: "target/quarkus-app/lib/ target/quarkus-app/*.jar target/quarkus-app/app/ target/quarkus-app/quarkus/"
+    - name: BP_MAVEN_BUILD_ARGUMENTS
+      value: "package -DskipTests=true -Dmaven.javadoc.skip=true -Dquarkus.package.type=fast-jar"
 ```
 
-You can then execute your native executable with: `./target/quarkus-basic-1.0.0-SNAPSHOT-runner`
+But in a TAP world you want to make sure the Variables are backed in the ClusterImageTemplate.
+Luckily the `kpack-template` already gets all the workload build env vars and injects them in the `.spec.build.env` of the kpack Image that it stamps. All we need to do is define them in the `workload.yaml`.
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.
+Alternatively there is a Quarkus Buildpack prototype that sets these variables for you: https://github.com/matejvasek/quarkus-bp
 
-## Related Guides
+## Deploy to Tanzu Application Platform
 
-- RESTEasy Reactive ([guide](https://quarkus.io/guides/resteasy-reactive)): A JAX-RS implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
+Use the provided `/config/workload.yaml` to deploy the application into TAP
+```shell script
+tanzu apps workload create quarkus-basic \
+  -f ./config/workload.yaml \
+  --yes
+```
 
-## Provided Code
-
-### RESTEasy Reactive
-
-Easily start your Reactive RESTful Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+Use the provided `/config/catalog-info.yaml` to import the application into the TAP-GUI

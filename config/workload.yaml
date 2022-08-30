@@ -1,0 +1,24 @@
+apiVersion: carto.run/v1alpha1
+kind: Workload
+metadata:
+  name: quarkus-basic
+  labels:
+    apps.tanzu.vmware.com/has-tests: true
+    apps.tanzu.vmware.com/workload-type: web
+    app.kubernetes.io/part-of: quarkus-basic
+spec:
+  params:
+  - name: annotations
+    value:
+      autoscaling.knative.dev/minScale: "1"
+  source:
+    git:
+      url: https://github.com/jaimegag/quarkus-basic
+      ref:
+        branch: main
+  build:
+    env:
+    - name: BP_MAVEN_BUILT_ARTIFACT
+      value: "target/quarkus-app/lib/ target/quarkus-app/*.jar target/quarkus-app/app/ target/quarkus-app/quarkus/"
+    - name: BP_MAVEN_BUILD_ARGUMENTS
+      value: "package -DskipTests=true -Dmaven.javadoc.skip=true -Dquarkus.package.type=fast-jar"
